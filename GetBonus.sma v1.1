@@ -52,6 +52,7 @@ public give_bonus(id)
 	}
 
 	bonus_value[attacker] = bonus_value[attacker] + value;
+	SaveBonus(id);
 	return 0;
 	
 }
@@ -77,6 +78,7 @@ public _set(wsp, wasp)
 	}	
 	
 	bonus_value[id] = bonus_value[id] + value;
+	SaveBonus(id);
 	return 0;	
 }
 
@@ -96,6 +98,7 @@ public HookGetBonus(id)
 	client_print(id, print_chat, "%L", id, "TAKE_MONEY");
 	cs_set_user_money(id, cs_get_user_money(id) + bonus_value[id]);
 	bonus_value[id] = 0;
+	SaveBonus(id);
 	ExecuteForward(getbonus_first_forward, ReturnType, id, bonus_value[id]);
 	return PLUGIN_CONTINUE
 }
