@@ -1,0 +1,153 @@
+/*
+	Author : TimeChangePeople
+	URL : www.ultracs.ro/forum
+	PS : This plugin is for CS 1.6 !!!! (amxmodx)
+*/
+
+#include <amxmodx>
+#include <amxmisc>
+#include <cstrike>
+#include <nvault>
+
+new const PLUGIN [] = "Get Bonus";
+new const VERSION [] = "1.1";
+new const AUTHOR [] = "TimeChangePeople";
+
+new bonus_value[33];
+new bonus_vault;
+new getbonus_first_forward;
+new ReturnType = 0;
+new bonus_cvar_enable;
+new bonus_cvar_save;
+
+
+public plugin_init()
+{
+	register_plugin(PLUGIN,VERSION,AUTHOR)
+
+	register_clcmd("say /getbonus","HookGetBonus")
+
+	register_event("Damage", "give_bonus", "b", "2!0", "3=0", "4!0")
+
+	server_print("%s(v%s) by %s",PLUGIN,VERSION,AUTHOR)
+
+	register_dictionary("get_bonus.txt");
+
+        bonus_vault = nvault_open("getbonus_vault");
+
+	getbonus_first_forward = CreateMultiForward("getbonus_player_money", ET_IGNORE, FP_CELL);
+
+	bonus_cvar_enable = register_cvar("gb_enable","1");
+	bonus_cvar_save = register_cvar("gb_save","1");
+}
+
+public give_bonus(id)
+{
+	static value; value = read_data( 2 );
+	static attacker; attacker = get_user_attacker(id)
+
+	if(!is_user_alive(attacker) || !attacker || !get_pcvar_num(bonus_cvar_enable))
+	{
+		return 1;
+	}
+
+	bonus_value[attacker] = bonus_value[attacker] + value;
+	return 0;
+	
+}
+
+public plugin_natives()
+{
+	register_native("get_user_bonus","_get");
+	register_native("set_user_bonus","_set");
+}
+
+public _get(id)
+{
+	return bonus_value[get_param(1)];
+}
+public _set(wsp, wasp)
+{
+	new id = get_param(1);
+	new value = get_param(2);
+
+	if(!is_user_connected(id))
+	{
+		return 1;
+	}	
+	
+	bonus_value[id] = bonus_value[id] + value;
+	return 0;	
+}
+
+public HookGetBonus(id)
+{
+	if(!get_pcvar_num(bonus_cvar_enable))
+	{
+		client_print(id, print_chat, "%L", id, "DISABLED");		
+	}
+
+	if(!bonus_value[id])
+	{
+		client_print(id, print_chat, "%L", id, "NO_MONEY");
+		return PLUGIN_HANDLED
+	}
+
+	client_print(id, print_chat, "%L", id, "TAKE_MONEY");
+	cs_set_user_money(id, cs_get_user_money(id) + bonus_value[id]);
+	bonus_value[id] = 0;
+	ExecuteForward(getbonus_first_forward, ReturnType, id, bonus_value[id]);
+	return PLUGIN_CONTINUE
+}
+
+public client_authorized(id)
+{
+	if(get_pcvar_num(bonus_cvar_save))
+	{
+		LoadBonus(id);
+	}
+
+	else
+	{
+		bonus_value[id] = 0;
+	}
+}
+
+public client_disconnect(id)
+{
+	if(get_pcvar_num(bonus_cvar_save))
+	{
+		LoadBonus(id);
+	}
+}
+
+public SaveBonus(id)
+{
+        new PlayerName[35];
+        get_user_authid(id,PlayerName,34);
+        
+        new vaultkey[64],vaultdata[256];
+        format(vaultkey,63,"%s",PlayerName);
+        format(vaultdata,255,"%i",bonus_value[id]);
+        nvault_set(bonus_vault,vaultkey,vaultdata);
+        return PLUGIN_CONTINUE;
+}
+public LoadBonus(id)
+{
+        new PlayerName[35];
+        get_user_authid(id,PlayerName,34);
+        
+        new vaultkey[64],vaultdata[256];
+        format(vaultkey,63,"%s",PlayerName);
+        format(vaultdata,255,"%i",bonus_value[id]);
+        nvault_get(bonus_vault,vaultkey,vaultdata,255);
+        
+        
+        new playermoney[33];
+        
+        parse(vaultdata, playermoney, 32);
+        
+        bonus_value[id] = str_to_num(playermoney);
+        
+        return PLUGIN_CONTINUE;
+}
