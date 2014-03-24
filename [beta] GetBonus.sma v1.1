@@ -3,10 +3,12 @@
 #include <cstrike>
 #include <nvault>
 
+// Plugin Info
 new const PLUGIN [] = "Get Bonus";
 new const VERSION [] = "1.1";
 new const AUTHOR [] = "TimeChangePeople";
 
+// Variables
 new bonus_value[33];
 new bonus_vault;
 new getbonus_first_forward;
@@ -14,12 +16,13 @@ new ReturnType = 0;
 new bonus_cvar_enable;
 new bonus_cvar_save;
 
-
+// Register informations, event, other
 public plugin_init()
 {
 	register_plugin(PLUGIN,VERSION,AUTHOR)
 
 	register_clcmd("say /getbonus","HookGetBonus")
+	register_clcmd("say /mybonus","HookMyBonus")
 
 	register_event("Damage", "give_bonus", "b", "2!0", "3=0", "4!0")
 
@@ -35,6 +38,7 @@ public plugin_init()
 	bonus_cvar_save = register_cvar("gb_save","1");
 }
 
+// Here will calculating your damage & transform in money bonus
 public give_bonus(id)
 {
 	static value; value = read_data( 2 );
@@ -51,6 +55,7 @@ public give_bonus(id)
 	
 }
 
+// Some natives for developers
 public plugin_natives()
 {
 	register_native("get_user_bonus","_get");
@@ -76,6 +81,7 @@ public _set(wsp, wasp)
 	return 0;	
 }
 
+// give your bonus damage in money
 public HookGetBonus(id)
 {
 	if(!get_pcvar_num(bonus_cvar_enable))
@@ -97,6 +103,25 @@ public HookGetBonus(id)
 	return PLUGIN_CONTINUE
 }
 
+// show your bonus
+public HookMyBonus(id)
+{
+	if(!get_pcvar_num(bonus_cvar_enable))
+	{
+		client_print(id, print_chat, "%L", id, "DISABLED");		
+	}
+
+	if(!bonus_value[id])
+	{
+		client_print(id, print_chat, "%L", id, "NO_MONEY");
+		return PLUGIN_HANDLED
+	}
+
+	client_print(id, print_chat, "%L %i", id, "YOUR_BONUS",bonus_value[id]);
+	return PLUGIN_CONTINUE
+}
+
+// Load Your bonus (gb_save 1)
 public client_authorized(id)
 {
 	if(get_pcvar_num(bonus_cvar_save))
@@ -110,6 +135,7 @@ public client_authorized(id)
 	}
 }
 
+// save your bonus (gb_save 1)
 public client_disconnect(id)
 {
 	if(get_pcvar_num(bonus_cvar_save))
